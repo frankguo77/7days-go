@@ -55,6 +55,8 @@ func (server *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // It is still necessary to invoke http.Serve(), typically in a go statement.
 func (server *Server) HandleHTTP() {
 	http.Handle(defaultRPCPath, server)
+	http.Handle(defaultDebugPath, debugHTTP{server})
+	log.Println("rpc server debug path:", defaultDebugPath)
 }
 
 func (server *Server) Accept(lis net.Listener) {
@@ -242,3 +244,4 @@ func (server *Server) findService(serviceMethod string)(svc *service, mtype *met
 
 	return
 }
+
