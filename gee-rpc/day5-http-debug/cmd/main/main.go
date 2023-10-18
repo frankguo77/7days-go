@@ -11,6 +11,8 @@ import (
 	. "geerpc/cmd"
 )
 
+import "C"
+
 func startServer(addrCh chan string) {
 	var foo Foo
 	l, _ := net.Listen("tcp", ":9999")
