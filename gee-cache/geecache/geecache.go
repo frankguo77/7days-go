@@ -10,6 +10,7 @@ type Group struct {
 	name      string
 	getter    Getter
 	mainCache  cache
+	peers      PeerPicker
 }
 
 type Getter interface {
@@ -53,6 +54,14 @@ func GetGroup(name string) *Group {
 	return g
 }
 
+func (g *Group) RegisterPeers(peers PeerPicker) {
+	if g.peers != nil {
+		panic("RegisterPeers called more than once.")
+	}
+
+	g.peers = peers
+}
+
 func (g* Group) Get(key string) (Byteview, error) {
 	if key == "" {
 		return Byteview{}, fmt.Errorf("key is required")
@@ -67,7 +76,23 @@ func (g* Group) Get(key string) (Byteview, error) {
 }
 
 func (g *Group) load(key string) (value Byteview, err error) {
+	if g.peers != nil {
+		if peer, ok := g.peers.PickPeer(key); ok {
+			if value, err = g.getFromPeer(peer, key); err == nil {
+				return 
+			}
+		}
+	}
 	return g.getLocally(key)
+}
+
+func (g *Group) getFromPeer(peer PeerGetter, key string) (Byteview, error) {
+	bytes, err := peer.Get(g.name, key)
+	if err != nil {
+		return Byteview{}, err
+	}
+
+	return Byteview{b: bytes}, nil
 }
 
 func (g *Group) getLocally(key string) (Byteview, error) {
