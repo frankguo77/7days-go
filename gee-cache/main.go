@@ -6,6 +6,7 @@ import (
 	"geecache"
 	"log"
 	"net/http"
+	"time"
 )
 
 var db = map[string]string {
@@ -18,6 +19,7 @@ func createGroup() *geecache.Group {
 	return geecache.NewGroup("scores", 2<<10, geecache.GetterFunc(
 		func(key string) ([]byte, error) {
 			log.Println("[SlowDB] search key", key)
+			time.Sleep(100*time.Millisecond)
 			if v, ok := db[key]; ok {
 				return []byte(v),nil
 			}

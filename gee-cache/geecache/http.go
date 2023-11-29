@@ -48,7 +48,7 @@ func (h *httpGetter) Get(group, key string) ([]byte, error) {
 var _ PeerGetter = (*httpGetter)(nil)
 
 const (
-	defaultBasePath = "/_geecache/"
+	defaultBasePath = "/_geecache"
 	defaultReplicas = 50
 )
 
@@ -80,7 +80,7 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	p.Log("%s %s", r.Method, r.URL.Path)
     // /<basepath>/<groupname>/<key> required
-	parts := strings.SplitN(r.URL.Path[len(p.basePath):], "/", 2)
+	parts := strings.SplitN(r.URL.Path[len(p.basePath) + 1:], "/", 2)
 	if len(parts) != 2 {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return 
@@ -88,9 +88,8 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	groupName := parts[0]
 	key :=   parts[1]
-
-	// log.Println(parts)
-	// log.Println(r.URL.Path)
+	// log.Println(groupName)
+	// log.Println(key)
 
 	group := GetGroup(groupName)
 	if group == nil {
@@ -113,6 +112,7 @@ func (p *HTTPPool) Set(peers ...string) {
 	defer p.mu.Unlock()
 
 	p.peers = consistenthash.New(defaultReplicas, nil)
+	p.peers.Add(peers...)
 	p.httpGetter = make(map[string]*httpGetter, len(peers))
 	for _, peer := range peers {
 		p.httpGetter[peer] = &httpGetter{baseURL: peer + p.basePath}
@@ -127,6 +127,8 @@ func (p *HTTPPool) PickPeer(key string) (PeerGetter, bool) {
 		p.Log("Pick peer %s", peer)
 		return p.httpGetter[peer], true
 	}
+
+	// p.Log("Pick self %s")
 
 	return nil, false
 }
